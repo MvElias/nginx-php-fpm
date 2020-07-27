@@ -70,31 +70,33 @@ COPY files/oracle  /opt/oracle/
 RUN apk --update add openjdk8-jre-base
 
 RUN apk --no-cache add tzdata bash nano php5-pear php5-dev gcc supervisor musl-dev libaio libnsl libc6-compat curl make autoconf &&\
-## Download and unzip Instant Client
   curl -o /tmp/basic.zip https://raw.githubusercontent.com/bumpx/oracle-instantclient/master/instantclient-basic-linux.x64-${ORACLE_INSTANTCLIENT_VERSION}.zip && \
   curl -o /tmp/sdk.zip https://raw.githubusercontent.com/bumpx/oracle-instantclient/master/instantclient-sdk-linux.x64-${ORACLE_INSTANTCLIENT_VERSION}.zip && \
   curl -o /tmp/sqlplus.zip https://raw.githubusercontent.com/bumpx/oracle-instantclient/master/instantclient-sqlplus-linux.x64-${ORACLE_INSTANTCLIENT_VERSION}.zip && \
   unzip -d /usr/local/ /tmp/basic.zip && \
   unzip -d /usr/local/ /tmp/sdk.zip && \
   unzip -d /usr/local/ /tmp/sqlplus.zip && \
-## Links are required
+
+#Symbolic links specified by oracle docs.
   ln -s /usr/local/instantclient_11_2 ${ORACLE_HOME} && \
   ln -s ${ORACLE_HOME}/libclntsh.so.* ${ORACLE_HOME}/libclntsh.so && \
   ln -s ${ORACLE_HOME}/libocci.so.* ${ORACLE_HOME}/libocci.so && \
   ln -s ${ORACLE_HOME}/lib* /usr/lib && \
   ln -s ${ORACLE_HOME}/sqlplus /usr/bin/sqlplus &&\
   ln -s /usr/lib/libnsl.so.2.0.0  /usr/lib/libnsl.so.1 &&\
-## Build OCI8 with PECL
+
+#Build OCI8 with PECL
   echo "instantclient,${ORACLE_HOME}" | pecl install oci8-2.0.12  &&\
   echo 'extension=oci8.so' > /usr/local/etc/php/conf.d/30-oci8.ini
-## INSTALL PHP EXTENSIONS
+
+#INSTALL SOME PHP EXTENSIONS
 
 RUN apk --no-cache add libmcrypt-dev bzip2-dev libpng libpng-dev icu-dev gettext gettext-dev libxml2-dev libxslt-dev &&\ 
 docker-php-ext-install mcrypt bz2 calendar gettext intl mysqli pcntl pdo_mysql shmop soap &&\
 docker-php-ext-install sockets sysvmsg sysvsem sysvshm wddx xsl zip
 
 
-#COPY FILES FROM DOCKERFILE ROOT DIRECTORY
+#COPY CUSTOM FILES
 COPY files/php.ini /usr/local/etc/php/
 COPY files/index.html /etc/nginx/html/
 COPY files/nginx.conf /etc/nginx/nginx.conf
@@ -110,5 +112,5 @@ RUN  apk del php5-pear php5-dev  musl-dev &&\
 
 EXPOSE 80 443
 
-
+#SET ENTRYPOINT
 ENTRYPOINT ["supervisord", "--nodaemon", "--configuration", "/etc/supervisord.conf"]
